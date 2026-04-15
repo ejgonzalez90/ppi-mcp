@@ -1,0 +1,29 @@
+{
+  "name": "ppi-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for PPI (Portfolio Personal Inversiones) REST API",
+  "type": "module",
+  "bin": {
+    "ppi-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx --env-file=.env src/index.ts",
+    "prettier:fix": "prettier --write \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.0.0",
+    "eslint": "^10.2.0",
+    "globals": "^17.5.0",
+    "prettier": "^3.8.2",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.58.1"
+  }
+}

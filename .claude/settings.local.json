@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(docker build:*)",
+      "Bash(npm run:*)",
+      "Bash(node:*)",
+      "mcp__yfinance-mcp__yf_market_summary",
+      "mcp__yfinance-mcp__yf_quote"
+    ]
+  }
+}
