@@ -2,6 +2,52 @@ import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { apiGet } from "../ppi-client.js";
 
+/**
+ * Asked for a book or quote at A-48HS or A-72HS, PPI answers with the A-24HS
+ * data rather than an empty result or an error. A settlement the instrument
+ * does not trade is therefore indistinguishable from one it does — the depth
+ * looks real, down to the millisecond timestamp. An order sent at the aliased
+ * settlement is dropped before it reaches the market, so flag the alias here.
+ */
+const ALIASED_SETTLEMENTS = new Set(["A-48HS", "A-72HS"]);
+const REFERENCE_SETTLEMENT = "A-24HS";
+
+async function getQuote(
+  path: string,
+  params: { Ticker: string; Type: string; Settlement?: string },
+): Promise<unknown> {
+  const data = await apiGet(path, params);
+  const { Settlement } = params;
+
+  if (!Settlement || !ALIASED_SETTLEMENTS.has(Settlement)) return data;
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    return data;
+  }
+
+  let reference: unknown;
+  try {
+    reference = await apiGet(path, {
+      ...params,
+      Settlement: REFERENCE_SETTLEMENT,
+    });
+  } catch {
+    return data; // Can't compare, so don't claim anything.
+  }
+  if (JSON.stringify(data) !== JSON.stringify(reference)) return data;
+
+  return {
+    ...data,
+    settlementWarning:
+      `PPI returned byte-identical data for ${Settlement} and ${REFERENCE_SETTLEMENT}, ` +
+      `so this is the ${REFERENCE_SETTLEMENT} response echoed back rather than a ` +
+      `${Settlement} market of its own. Do not read it as proof that ${params.Ticker} ` +
+      `trades at ${Settlement}: an order sent at an unsupported settlement is cancelled ` +
+      `server-side without reaching the market and without appearing in the order ` +
+      `history. Price the order off ${REFERENCE_SETTLEMENT} instead, and check that it ` +
+      `is quoting before sending.`,
+  };
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     "ppi_search_instrument",
@@ -80,7 +126,7 @@ export function register(server: McpServer) {
     "ppi_get_current_price",
     {
       description:
-        "Get real-time market price and quote data for an instrument.",
+        "Get real-time market price and quote data for an instrument. A `settlementWarning` in the response means the requested settlement is an alias of A-24HS and is not tradable for this instrument.",
       inputSchema: {
         ticker: z.string().describe("Ticker symbol"),
         type: z.string().describe("Instrument type"),
@@ -92,7 +138,7 @@ export function register(server: McpServer) {
         {
           type: "text",
           text: JSON.stringify(
-            await apiGet("/MarketData/Current", {
+            await getQuote("/MarketData/Current", {
               Ticker: ticker,
               Type: type,
               Settlement: settlement,
@@ -168,7 +214,8 @@ export function register(server: McpServer) {
   server.registerTool(
     "ppi_get_order_book",
     {
-      description: "Get the live order book (bids and asks) for an instrument.",
+      description:
+        "Get the live order book (bids and asks) for an instrument. A `settlementWarning` in the response means the requested settlement is an alias of A-24HS and is not tradable for this instrument — do not read the depth as proof the settlement exists.",
       inputSchema: {
         ticker: z.string().describe("Ticker symbol"),
         type: z.string().describe("Instrument type"),
@@ -180,7 +227,7 @@ export function register(server: McpServer) {
         {
           type: "text",
           text: JSON.stringify(
-            await apiGet("/MarketData/Book", {
+            await getQuote("/MarketData/Book", {
               Ticker: ticker,
               Type: type,
               Settlement: settlement,

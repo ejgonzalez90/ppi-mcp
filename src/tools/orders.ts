@@ -38,6 +38,34 @@ const orderFields = {
     .describe("Disclaimer acceptances (returned by ppi_order_budget)"),
 };
 
+/**
+ * PPI acknowledges an order with PENDIENTE-DE-EJECUCION and may then drop it
+ * server-side without ever routing it to the market — an order sent at a
+ * settlement the instrument does not trade dies this way, and the cancelled
+ * order never shows up in /Order/Orders either. Re-read the order so callers
+ * see the real outcome instead of the optimistic acknowledgement.
+ */
+async function withOutcome(
+  accountNumber: string,
+  confirmation: unknown,
+): Promise<unknown> {
+  const orderID = (confirmation as { id?: number } | null)?.id;
+  if (typeof orderID !== "number" || orderID === 0) return { confirmation };
+
+  try {
+    return {
+      confirmation,
+      outcome: await apiGet("/Order/Detail", { accountNumber, orderID }),
+    };
+  } catch (err) {
+    return {
+      confirmation,
+      outcome: null,
+      outcomeError: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 export function register(server: McpServer) {
   server.registerTool(
     "ppi_get_active_orders",
@@ -149,7 +177,7 @@ export function register(server: McpServer) {
     "ppi_confirm_order",
     {
       description:
-        "Place a new order. Call ppi_order_budget first to get required disclaimers, then include them (with accepted: true) here.",
+        "Place a new order. Call ppi_order_budget first to get required disclaimers, then include them (with accepted: true) here. Returns { confirmation, outcome }: `confirmation` is PPI's acknowledgement, `outcome` is the order re-read straight afterwards. Trust `outcome.status` — an accepted order can still come back CANCELADA without ever reaching the market.",
       inputSchema: {
         accountNumber: orderFields.accountNumber,
         ticker: orderFields.ticker,
@@ -167,14 +195,21 @@ export function register(server: McpServer) {
         disclaimers: orderFields.disclaimers,
       },
     },
-    async (args) => ({
-      content: [
-        {
-          type: "text",
-          text: JSON.stringify(await apiPost("/Order/Confirm", args), null, 2),
-        },
-      ],
-    }),
+    async (args) => {
+      const confirmation = await apiPost("/Order/Confirm", args);
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              await withOutcome(args.accountNumber, confirmation),
+              null,
+              2,
+            ),
+          },
+        ],
+      };
+    },
   );
 
   server.registerTool(
