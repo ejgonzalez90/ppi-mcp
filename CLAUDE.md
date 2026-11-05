@@ -4,17 +4,21 @@ MCP server for the Portfolio Personal Inversiones (PPI) REST API. Uses **Streama
 
 ## Tech stack
 
-- **Runtime:** Node.js 22, TypeScript (ESM)
+- **Runtime:** Node.js 22+, TypeScript (ESM)
 - **MCP SDK:** `@modelcontextprotocol/sdk` — `McpServer` + `StreamableHTTPServerTransport`
 - **HTTP server:** Node.js built-in `node:http`
 - **Validation:** `zod` v4
 - **Build:** `tsc` → `dist/`; dev: `tsx watch`
+- **Tests:** `vitest` (offline, `fetch` mocked), in `tests/`
 
 ## Source structure
 
 ```
 src/
 ├── index.ts              # HTTP server, session management, request routing
+├── server.ts             # createMcpServer(): builds McpServer, registers tools, applies trading guard
+├── trading.ts            # TRADING_TOOLS list, isTradingEnabled(), guardTradingTools()
+├── data/etf-catalog.json # static ETF/FCI-EXTERIOR catalog (148 instruments)
 ├── ppi-client.ts         # apiGet(), apiPost(), manualLogin() — wraps all PPI API calls
 └── tools/
     ├── account.ts        # ppi_login, ppi_get_accounts, ppi_get_bank_accounts, ppi_get_available_balance,
@@ -38,6 +42,7 @@ src/
 - Authentication is handled by `ppi-client.ts` automatically on first request. `ppi_login` is exposed as a tool for manual re-auth but is rarely needed.
 - **Session management**: each MCP `initialize` request creates a fresh `McpServer` + `StreamableHTTPServerTransport` pair, stored in the `sessions` Map by session ID. This is required because `StreamableHTTPServerTransport` returns 400 on a second `initialize`. Sessions are cleaned up in `transport.onclose`.
 - All tool handlers return `{ content: [{ type: "text", text: JSON.stringify(data, null, 2) }] }`.
+- **Trading guard**: tools that move money or change broker state are listed in `TRADING_TOOLS` (`src/trading.ts`) and registered only when `ENABLE_TRADING=true`. Tool modules take a `ToolHost` (`Pick<McpServer, "registerTool">`); `createMcpServer()` passes a guarded host. When adding a tool that places/cancels orders, moves funds or mutates broker state, add its name to `TRADING_TOOLS`.
 - Ordering workflow: always call `ppi_order_budget` before `ppi_confirm_order` — budget returns required disclaimers that must be passed back with `accepted: true`.
 
 ## Environment variables
@@ -50,6 +55,7 @@ src/
 | `PPI_CLIENT_KEY` | Yes | Client key |
 | `PPI_BASE_URL` | No | Override base URL (default: PPI sandbox) |
 | `PPI_API_VERSION` | No | API version (default: `1.0`) |
+| `ENABLE_TRADING` | No | `true` registers the trading tools (default: off) |
 | `PORT` | No | Override listen port (default: `7575`) |
 
 ## Commands
@@ -58,11 +64,15 @@ src/
 npm run build      # tsc → dist/
 npm run start      # node dist/index.js
 npm run dev        # tsx --env-file=.env src/index.ts
+npm run typecheck  # tsc --noEmit
+npm run lint       # eslint
+npm test           # vitest run (no network)
 npm run prettier:fix  # format src/**/*.ts
 
 # Docker
 docker build --target runtime -t ppi-mcp:latest .
 docker build --target dev -t ppi-mcp:dev .
+docker compose up -d   # build locally and run (restart unless-stopped)
 docker run -i --rm --env-file .env -p 7575:7575 ppi-mcp:latest
 docker run -i --rm --env-file .env -p 7575:7575 -v "$(pwd)/src:/app/src" ppi-mcp:dev
 ```
@@ -79,5 +89,6 @@ This server listens on `http://0.0.0.0:7575/mcp`. The MCP endpoint is `POST /mcp
 
 1. Add to the appropriate file under `src/tools/`, or create a new one.
 2. Register with `server.registerTool(name, { description, inputSchema }, handler)`.
-3. Import and call your `register` function from `src/index.ts` inside `createMcpServer()`.
+3. Import and call your `register` function from `src/server.ts` inside `createMcpServer()`.
 4. Use only `apiGet()` or `apiPost()` for PPI API calls.
+5. If it is state-changing, add it to `TRADING_TOOLS`; add a test in `tests/` (mock `fetch`, never hit the network).

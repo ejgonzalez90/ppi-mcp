@@ -70,6 +70,39 @@
         "group": "run"
       },
       "problemMatcher": []
+    },
+    // ── Compose / Test ───────────────────────────────────────────────────────
+    {
+      "label": "Compose: up (build + detach)",
+      "type": "shell",
+      "command": "docker compose up -d --build",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "run"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: unit tests",
+      "type": "shell",
+      "command": "npm test",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "test"
+      },
+      "problemMatcher": []
     }
   ]
 }
