@@ -73,7 +73,7 @@ In `NODE_ENV !== "production"`, `GET /debug` returns server health, uptime, acti
 
 ## Transport: Streamable HTTP
 
-Unlike `iol-mcp` (stdio), this server listens on `http://0.0.0.0:7575/mcp`. The MCP endpoint is `POST /mcp` (new session) or `POST/GET /mcp` with `Mcp-Session-Id` header (existing session). Unknown session IDs return 404; missing session ID on non-initialize requests returns 400.
+This server listens on `http://0.0.0.0:7575/mcp`. The MCP endpoint is `POST /mcp` (new session) or `POST/GET /mcp` with `Mcp-Session-Id` header (existing session). Unknown session IDs return 404; missing session ID on non-initialize requests returns 400.
 
 ## Adding a new tool
 

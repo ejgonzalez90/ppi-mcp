@@ -2,6 +2,12 @@
   "name": "ppi-mcp",
   "version": "1.0.0",
   "description": "MCP server for PPI (Portfolio Personal Inversiones) REST API",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ejgonzalez90/ppi-mcp.git"
+  },
+  "homepage": "https://github.com/ejgonzalez90/ppi-mcp",
   "type": "module",
   "bin": {
     "ppi-mcp": "./dist/index.js"
@@ -25,5 +31,8 @@
     "tsx": "^4.0.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.58.1"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }
