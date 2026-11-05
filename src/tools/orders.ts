@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolHost } from "../trading.js";
 import { apiGet, apiPost } from "../ppi-client.js";
 
 const orderFields = {
@@ -66,7 +66,7 @@ async function withOutcome(
   }
 }
 
-export function register(server: McpServer) {
+export function register(server: ToolHost) {
   server.registerTool(
     "ppi_get_active_orders",
     {

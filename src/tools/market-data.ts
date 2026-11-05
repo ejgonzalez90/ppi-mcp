@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { ToolHost } from "../trading.js";
 import { apiGet } from "../ppi-client.js";
 
 /**
@@ -48,7 +48,7 @@ async function getQuote(
   };
 }
 
-export function register(server: McpServer) {
+export function register(server: ToolHost) {
   server.registerTool(
     "ppi_search_instrument",
     {

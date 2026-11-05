@@ -1,13 +1,9 @@
 #!/usr/bin/env node
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 
-import { register as registerAccount } from "./tools/account.js";
-import { register as registerConfig } from "./tools/configuration.js";
-import { register as registerMarket } from "./tools/market-data.js";
-import { register as registerOrders } from "./tools/orders.js";
+import { createMcpServer } from "./server.js";
 
 const PORT = Number(process.env.PORT ?? 7575);
 const IS_DEV = process.env.NODE_ENV !== "production";
@@ -34,20 +30,20 @@ log("INFO", "PPI credentials check", {
   PPI_API_VERSION: process.env.PPI_API_VERSION ?? "(default 1.0)",
 });
 
+// Log once at startup how many trading tools are enabled or skipped.
+const startup = createMcpServer();
+log(
+  "INFO",
+  startup.tradingEnabled
+    ? `Trading ENABLED (ENABLE_TRADING=true): ${startup.tradingTools.length} trading tools registered`
+    : `Trading DISABLED (set ENABLE_TRADING=true to enable): ${startup.skippedTools.length} trading tools skipped`,
+);
+
 // Per-session transports — each MCP initialize request gets a fresh server +
 // transport pair. This is required because StreamableHTTPServerTransport returns
 // 400 "Server already initialized" when an already-initialized transport receives
 // a second initialize request (e.g. on client reconnect).
 const sessions = new Map<string, StreamableHTTPServerTransport>();
-
-function createMcpServer(): McpServer {
-  const server = new McpServer({ name: "ppi-mcp", version: "1.0.0" });
-  registerAccount(server);
-  registerConfig(server);
-  registerMarket(server);
-  registerOrders(server);
-  return server;
-}
 
 function handleDebug(_req: IncomingMessage, res: ServerResponse) {
   const info = {
@@ -121,7 +117,7 @@ const httpServer = createServer(async (req, res) => {
       }
     };
 
-    const mcpServer = createMcpServer();
+    const { server: mcpServer } = createMcpServer();
     await mcpServer.connect(newTransport);
 
     transport = newTransport;
