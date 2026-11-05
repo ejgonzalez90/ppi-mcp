@@ -24,5 +24,10 @@ export function createMcpServer(
   registerConfig(host);
   registerMarket(host);
   registerOrders(host);
-  return { server, tradingEnabled, tradingTools: trading, skippedTools: skipped };
+  return {
+    server,
+    tradingEnabled,
+    tradingTools: trading,
+    skippedTools: skipped,
+  };
 }

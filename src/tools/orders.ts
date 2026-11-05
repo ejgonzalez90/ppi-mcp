@@ -45,7 +45,7 @@ const orderFields = {
  * order never shows up in /Order/Orders either. Re-read the order so callers
  * see the real outcome instead of the optimistic acknowledgement.
  */
-async function withOutcome(
+export async function withOutcome(
   accountNumber: string,
   confirmation: unknown,
 ): Promise<unknown> {

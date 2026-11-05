@@ -12,7 +12,7 @@ import { apiGet } from "../ppi-client.js";
 const ALIASED_SETTLEMENTS = new Set(["A-48HS", "A-72HS"]);
 const REFERENCE_SETTLEMENT = "A-24HS";
 
-async function getQuote(
+export async function getQuote(
   path: string,
   params: { Ticker: string; Type: string; Settlement?: string },
 ): Promise<unknown> {
