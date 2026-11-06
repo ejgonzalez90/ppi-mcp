@@ -38,7 +38,7 @@
     {
       "label": "Run: production",
       "type": "shell",
-      "command": "docker run -i --rm --env-file .env -p 7575:7575 ppi-mcp:latest",
+      "command": "docker run -i --rm --env-file .env -p 127.0.0.1:7575:7575 ppi-mcp:latest",
       "dependsOn": "Build: production image",
       "dependsOrder": "sequence",
       "options": {
@@ -60,7 +60,7 @@
       "dependsOn": "Build: dev image",
       "dependsOrder": "sequence",
       "type": "shell",
-      "command": "docker run -i --rm --env-file .env -p 7575:7575 -v \"${workspaceFolder}/src:/app/src\" ppi-mcp:dev",
+      "command": "docker run -i --rm --env-file .env -p 127.0.0.1:7575:7575 -v \"${workspaceFolder}/src:/app/src\" ppi-mcp:dev",
       "options": {
         "cwd": "${workspaceFolder}"
       },

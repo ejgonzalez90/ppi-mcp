@@ -4,7 +4,7 @@ An unofficial [Model Context Protocol](https://modelcontextprotocol.io) (MCP) se
 
 > **Disclaimer.** This project is **not affiliated with, endorsed by, or supported by PPI**. It is provided as-is, **use it at your own risk**. Trading involves financial risk, and an AI agent can make mistakes. **Tools that move money or change state at the broker are disabled by default** and only exist when you set `ENABLE_TRADING=true`. Read the code and try it against the PPI sandbox before pointing it at a real account.
 
-**Transport:** Streamable HTTP, listening on `http://0.0.0.0:7575/mcp`.
+**Transport:** Streamable HTTP, listening on `http://0.0.0.0:7575/mcp` inside the container. The examples publish it on `127.0.0.1` only, because the server has no authentication of its own.
 
 ## Features
 
@@ -28,7 +28,7 @@ cp .env.example .env
 
 ```bash
 docker run -d --name ppi-mcp --restart unless-stopped \
-  --env-file .env -p 7575:7575 ghcr.io/ejgonzalez90/ppi-mcp:latest
+  --env-file .env -p 127.0.0.1:7575:7575 ghcr.io/ejgonzalez90/ppi-mcp:latest
 ```
 
 ### b) Docker Compose, build locally
